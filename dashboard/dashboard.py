@@ -1,5 +1,3 @@
-# Memperbarui kode Streamlit untuk menambahkan informasi tentang dataset
-
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -10,9 +8,15 @@ from sklearn.cluster import KMeans
 # Load dataset
 @st.cache_data
 def load_data():
-    return pd.read_csv("df_hour_cleaned.csv")
+    df = pd.read_csv("df_hour_cleaned.csv")
+    df["dteday"] = pd.to_datetime(df["dteday"])
+    df["weekday"] = df["dteday"].dt.weekday  # Tambahkan kolom weekday
+    return df
 
 df = load_data()
+
+# Filter data untuk tahun 2012
+hour_df_2012 = df[df["yr"] == 1]  # 1 menunjukkan tahun 2012, 0 menunjukkan 2011
 
 # Sidebar navigation
 st.sidebar.title("Dashboard Navigasi")
@@ -63,12 +67,32 @@ elif page == "Visualisasi Data":
     st.subheader("Pengaruh Kondisi Cuaca terhadap Penyewaan Sepeda")
     weather_group = df.groupby("weathersit")["cnt"].mean().reset_index()
     fig, ax = plt.subplots(figsize=(8, 5))
-    sns.barplot(x=weather_group["weathersit"], y=weather_group["cnt"], palette="coolwarm", ax=ax)
+    sns.barplot(x="weathersit", y="cnt", hue="weathersit", palette="coolwarm", legend=False, data=weather_group, ax=ax)
     ax.set_xlabel("Kondisi Cuaca (1=Cerah, 2=Berawan, 3=Hujan, 4=Badai)")
     ax.set_ylabel("Rata-rata Penyewaan Sepeda per Jam")
     ax.set_title("Pengaruh Kondisi Cuaca terhadap Penyewaan Sepeda")
     st.pyplot(fig)
-    
+
+    # Boxplot Penyewaan Sepeda Berdasarkan Jam dan Cuaca (2012)
+    st.subheader("Distribusi Penyewaan Sepeda Berdasarkan Jam dan Cuaca (2012)")
+    fig, ax = plt.subplots(figsize=(12,6))
+    sns.boxplot(x="hr", y="cnt", hue="weathersit", data=hour_df_2012, palette="coolwarm", ax=ax)
+    ax.set_xlabel("Jam dalam Sehari")
+    ax.set_ylabel("Jumlah Penyewaan Sepeda")
+    ax.set_title("Distribusi Penyewaan Sepeda Berdasarkan Jam dan Cuaca (2012)")
+    ax.legend(title="Kondisi Cuaca", labels=["Cerah", "Berawan", "Hujan Ringan", "Badai"])
+    st.pyplot(fig)
+
+    # Heatmap Penyewaan Sepeda Berdasarkan Jam dan Hari (2012)
+    st.subheader("Heatmap Penyewaan Sepeda Berdasarkan Jam dan Hari (2012)")
+    pivot_table = hour_df_2012.pivot_table(index="weekday", columns="hr", values="cnt", aggfunc="mean")
+    fig, ax = plt.subplots(figsize=(12,6))
+    sns.heatmap(pivot_table, cmap="coolwarm", annot=False, linewidths=0.5, ax=ax)
+    ax.set_xlabel("Jam dalam Sehari")
+    ax.set_ylabel("Hari dalam Seminggu (0 = Minggu, 6 = Sabtu)")
+    ax.set_title("Heatmap Penyewaan Sepeda Berdasarkan Jam dan Hari (2012)")
+    st.pyplot(fig)
+
     # Lineplot Tren Permintaan Sepeda per Jam
     st.subheader("Tren Permintaan Penyewaan Sepeda Berdasarkan Jam dalam Sehari")
     hour_group = df.groupby("hr")["cnt"].mean().reset_index()
@@ -83,9 +107,6 @@ elif page == "Visualisasi Data":
 elif page == "Analisis RFM & Clustering":
     st.title("Analisis RFM dan Clustering")
     
-    # Konversi tanggal ke datetime
-    df["dteday"] = pd.to_datetime(df["dteday"])
-    
     # RFM Analysis
     st.subheader("Analisis RFM")
     rfm_df = df.groupby("dteday").agg(
@@ -98,19 +119,11 @@ elif page == "Analisis RFM & Clustering":
     
     # Clustering berdasarkan jam
     st.subheader("Clustering Kategori Jam")
-    def categorize_hour(hour):
-        if 7 <= hour <= 9 or 16 <= hour <= 19:
-            return 'Peak Hours'
-        elif 10 <= hour <= 15:
-            return 'Normal Hours'
-        else:
-            return 'Off-Peak Hours'
-    
-    df["Hour_Category"] = df["hr"].apply(categorize_hour)
+    df["Hour_Category"] = df["hr"].apply(lambda x: 'Peak Hours' if 7 <= x <= 9 or 16 <= x <= 19 else ('Normal Hours' if 10 <= x <= 15 else 'Off-Peak Hours'))
     hourly_clustering = df.groupby("Hour_Category")["cnt"].mean().reset_index()
     
     fig, ax = plt.subplots(figsize=(8, 5))
-    sns.barplot(x=hourly_clustering["Hour_Category"], y=hourly_clustering["cnt"], palette="coolwarm", ax=ax)
+    sns.barplot(x="Hour_Category", y="cnt", hue="Hour_Category", palette="coolwarm", legend=False, data=hourly_clustering, ax=ax)
     ax.set_xlabel("Kategori Jam")
     ax.set_ylabel("Rata-rata Penyewaan Sepeda")
     ax.set_title("Rata-rata Penyewaan Sepeda Berdasarkan Kategori Jam")
