@@ -1,8 +1,8 @@
+import matplotlib
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 import streamlit as st
-from sklearn.cluster import KMeans
 
 
 # Load dataset
@@ -64,45 +64,36 @@ elif page == "Visualisasi Data":
     st.pyplot(fig)
     
     # Barplot Pengaruh Kondisi Cuaca
-    st.subheader("Pengaruh Kondisi Cuaca terhadap Penyewaan Sepeda")
-    weather_group = df.groupby("weathersit")["cnt"].mean().reset_index()
+    st.subheader("Pengaruh Kondisi Cuaca terhadap Penyewaan Sepeda (2012)")
+# Rata-rata penyewaan sepeda berdasarkan kondisi cuaca
+    weather_group = hour_df_2012.groupby("weathersit")["cnt"].mean().reset_index()
     fig, ax = plt.subplots(figsize=(8, 5))
-    sns.barplot(x="weathersit", y="cnt", hue="weathersit", palette="coolwarm", legend=False, data=weather_group, ax=ax)
-    ax.set_xlabel("Kondisi Cuaca (1=Cerah, 2=Berawan, 3=Hujan, 4=Badai)")
-    ax.set_ylabel("Rata-rata Penyewaan Sepeda per Jam")
-    ax.set_title("Pengaruh Kondisi Cuaca terhadap Penyewaan Sepeda")
+    sns.barplot(x=weather_group["weathersit"], y=weather_group["cnt"], palette="coolwarm")
+    plt.xlabel("Kondisi Cuaca (1 = Cerah, 2 = Berawan, 3 = Hujan ringan, 4 = Badai)")
+    plt.ylabel("Rata-rata Penyewaan Sepeda per Jam")
+    plt.title("Pengaruh Kondisi Cuaca terhadap Penyewaan Sepeda (Tahun 2012)")
     st.pyplot(fig)
 
-    # Boxplot Penyewaan Sepeda Berdasarkan Jam dan Cuaca (2012)
-    st.subheader("Distribusi Penyewaan Sepeda Berdasarkan Jam dan Cuaca (2012)")
-    fig, ax = plt.subplots(figsize=(12,6))
-    sns.boxplot(x="hr", y="cnt", hue="weathersit", data=hour_df_2012, palette="coolwarm", ax=ax)
-    ax.set_xlabel("Jam dalam Sehari")
-    ax.set_ylabel("Jumlah Penyewaan Sepeda")
-    ax.set_title("Distribusi Penyewaan Sepeda Berdasarkan Jam dan Cuaca (2012)")
-    ax.legend(title="Kondisi Cuaca", labels=["Cerah", "Berawan", "Hujan Ringan", "Badai"])
-    st.pyplot(fig)
-
-    # Heatmap Penyewaan Sepeda Berdasarkan Jam dan Hari (2012)
-    st.subheader("Heatmap Penyewaan Sepeda Berdasarkan Jam dan Hari (2012)")
-    pivot_table = hour_df_2012.pivot_table(index="weekday", columns="hr", values="cnt", aggfunc="mean")
-    fig, ax = plt.subplots(figsize=(12,6))
-    sns.heatmap(pivot_table, cmap="coolwarm", annot=False, linewidths=0.5, ax=ax)
-    ax.set_xlabel("Jam dalam Sehari")
-    ax.set_ylabel("Hari dalam Seminggu (0 = Minggu, 6 = Sabtu)")
-    ax.set_title("Heatmap Penyewaan Sepeda Berdasarkan Jam dan Hari (2012)")
-    st.pyplot(fig)
-
-    # Lineplot Tren Permintaan Sepeda per Jam
-    st.subheader("Tren Permintaan Penyewaan Sepeda Berdasarkan Jam dalam Sehari")
-    hour_group = df.groupby("hr")["cnt"].mean().reset_index()
+    # Lineplot Tren Permintaan Sepeda per Jam (All Time)
+    st.subheader("Tren Permintaan Penyewaan Sepeda Berdasarkan Jam dalam Sehari (All Time)")
     fig, ax = plt.subplots(figsize=(10, 5))
-    sns.lineplot(x=hour_group["hr"], y=hour_group["cnt"], marker="o", color="b", ax=ax)
+    sns.lineplot(x=df["hr"], y=df["cnt"], marker="o", color="b", ax=ax)
     ax.set_xlabel("Jam dalam Sehari")
     ax.set_ylabel("Rata-rata Penyewaan Sepeda")
-    ax.set_title("Tren Permintaan Penyewaan Sepeda Berdasarkan Jam dalam Sehari")
+    ax.set_title("Tren Permintaan Penyewaan Sepeda Berdasarkan Jam dalam Sehari (All Time)")
     ax.grid()
     st.pyplot(fig)
+
+    # Heatmap Penyewaan Sepeda Berdasarkan Jam dan Hari (All Time)
+    st.subheader("Heatmap Penyewaan Sepeda Berdasarkan Jam dan Hari (All Time)")
+    pivot_table_all_time = df.pivot_table(index="weekday", columns="hr", values="cnt", aggfunc="mean")
+    fig, ax = plt.subplots(figsize=(12, 6))
+    sns.heatmap(pivot_table_all_time, cmap="coolwarm", annot=False, linewidths=0.5, ax=ax)
+    ax.set_xlabel("Jam dalam Sehari")
+    ax.set_ylabel("Hari dalam Seminggu (0 = Minggu, 6 = Sabtu)")
+    ax.set_title("Heatmap Penyewaan Sepeda Berdasarkan Jam dan Hari (All Time)")
+    st.pyplot(fig)
+
 
 elif page == "Analisis RFM & Clustering":
     st.title("Analisis RFM dan Clustering")
